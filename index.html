@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Hubble to Houston</title>
+<style>
+  :root{--bg:#fff3e6;--ink:#4a2c40;--pink:#ff6b8b;--gold:#ffc857;--blue:#4d9de0;--card:#ffffff}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:linear-gradient(#ffd9e0,#fff3e6);color:var(--ink);
+    font-family:"Trebuchet MS",system-ui,sans-serif;overflow:hidden;touch-action:manipulation}
+  #app{max-width:640px;margin:0 auto;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;text-align:center}
+  .screen{display:none;width:100%;animation:pop .4s ease}
+  .screen.on{display:block}
+  @keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+  h1{font-size:clamp(30px,8vw,48px);margin:.2em 0;color:var(--pink);text-shadow:3px 3px 0 #fff}
+  h2{margin:.2em 0;color:var(--pink)}
+  p{line-height:1.5;font-size:clamp(15px,3.8vw,18px)}
+  button{font:inherit;font-weight:bold;background:var(--pink);color:#fff;border:0;border-radius:999px;
+    padding:12px 28px;font-size:18px;box-shadow:0 4px 0 #c94768;cursor:pointer;margin:8px}
+  button:active{transform:translateY(3px);box-shadow:0 1px 0 #c94768}
+  .card{background:var(--card);border-radius:20px;padding:16px 18px;box-shadow:0 6px 20px #0002}
+  canvas{background:#fff;border-radius:16px;box-shadow:0 6px 20px #0003;max-width:100%;max-height:62vh;touch-action:none}
+  .hud{display:flex;justify-content:space-between;font-weight:bold;margin:4px 6px;font-size:17px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:420px;margin:10px auto}
+  .tile{aspect-ratio:1;perspective:600px;cursor:pointer}
+  .tile div{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .4s}
+  .tile.flip div{transform:rotateY(180deg)}
+  .tile span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:14px;backface-visibility:hidden;font-size:clamp(26px,9vw,44px)}
+  .tile .f{background:var(--pink);color:#fff;box-shadow:0 3px 0 #c94768}
+  .tile .b{background:#fff;transform:rotateY(180deg);box-shadow:0 3px 8px #0003}
+  .tile.done .b{background:#ffe7ee}
+  .letter{text-align:left;max-height:62vh;overflow:auto}
+  .ticket{border:3px dashed var(--pink);border-radius:14px;padding:10px;margin:10px 0;background:#fff8e1;text-align:center;font-weight:bold}
+  .small{font-size:13px;opacity:.7}
+  .float{position:fixed;pointer-events:none;font-size:22px;animation:up 3s linear forwards}
+  @keyframes up{from{transform:translateY(0);opacity:1}to{transform:translateY(-110vh);opacity:0}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TITLE -->
+  <section class="screen on" id="s-title">
+    <div style="font-size:64px">☕💛🎬</div>
+    <h1>Hubble to Houston</h1>
+    <p>A tiny game about <b>Mitch</b> &amp; <b>Alayna</b>,<br>made as a gift from a friend.</p>
+    <p class="small">3 short levels · about 5 minutes · sound off, feelings on</p>
+    <button onclick="go('s-intro1')">Start ▶</button>
+  </section>
+
+  <!-- INTRO 1 -->
+  <section class="screen" id="s-intro1">
+    <div class="card">
+      <h2>Level 1 · Hubble</h2>
+      <canvas id="c0" width="420" height="200" style="max-height:200px"></canvas>
+      <p>It all started in the Drake cafeteria. Mitch kept <i>accidentally</i> dropping good things from above, and Alayna kept catching them.</p>
+      <p><b>Move</b> with your mouse, finger, or ← → keys. Catch <b>12</b> things!</p>
+      <button onclick="startL1()">Let's eat! 🍕</button>
+    </div>
+  </section>
+
+  <!-- L1 -->
+  <section class="screen" id="s-l1">
+    <div class="hud"><span>Hubble Hangout</span><span id="l1score">0 / 12</span></div>
+    <canvas id="c1" width="420" height="560"></canvas>
+  </section>
+
+  <!-- INTRO 2 -->
+  <section class="screen" id="s-intro2">
+    <div class="card">
+      <h2>Level 2 · Movie Night</h2>
+      <div style="font-size:56px">🍿🎬🛋️</div>
+      <p>More than a year of movies together. Flip the cards and match all the pairs, like finding your favorite pieces of a perfect movie night.</p>
+      <button onclick="startL2()">Roll the film 🎞️</button>
+    </div>
+  </section>
+
+  <!-- L2 -->
+  <section class="screen" id="s-l2">
+    <div class="hud"><span>Movie Night</span><span id="l2info">Moves: 0</span></div>
+    <div class="grid" id="grid"></div>
+    <p id="l2msg" class="small">Find the matches!</p>
+  </section>
+
+  <!-- INTRO 3 -->
+  <section class="screen" id="s-intro3">
+    <div class="card">
+      <h2>Level 3 · Iowa ↔ Houston</h2>
+      <p>Now Alayna is in Des Moines, hitting the books and working hard. Mitch is in Houston, building AI solutions at Accenture. A lot of miles between them, but not a lot of distance in the heart. 💛</p>
+      <p><b>Tap / click / press Space</b> to jump over <b>midterms, deadlines and bugs</b>. Grab hearts to speed up the journey!</p>
+      <button onclick="startL3()">Run, Mitch, run! 🏃</button>
+    </div>
+  </section>
+
+  <!-- L3 -->
+  <section class="screen" id="s-l3">
+    <div class="hud"><span>Houston 🤠</span><span id="l3hearts">💛 0</span><span>🌽 Des Moines</span></div>
+    <canvas id="c3" width="640" height="300"></canvas>
+    <div style="background:#fff;border-radius:99px;height:16px;margin:8px 6px;overflow:hidden;box-shadow:inset 0 2px 4px #0003">
+      <div id="bar" style="height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--pink))"></div>
+    </div>
+  </section>
+
+  <!-- END -->
+  <section class="screen" id="s-end">
+    <div class="card letter">
+      <h2>You did it! 🎉</h2>
+      <p>Mitch &amp; Alayna,</p>
+      <p>You met over cafeteria food at Hubble, which is honestly the most Drake way to fall for someone. Since then it's been movie nights, long study sessions, a graduation, and a move to Houston. Even with the miles in between, you two keep showing up for each other, and everyone who knows you can see how good you are together.</p>
+      <p>Mitch, keep building cool things. Alayna, keep crushing it. The distance is just a level, and you're both really good at this game. 💛</p>
+      <p>With love from a friend who's rooting for you both.</p>
+      <div class="ticket">🎟️ Coupon: One Reunion Movie Night<br><span class="small">(popcorn included, home at a perfectly respectable hour 😇, date to be announced by you two)</span></div>
+      <div class="ticket">🎟️ Coupon: One Trip Back to Hubble<br><span class="small">(Mitch pays in nostalgia)</span></div>
+      <div style="text-align:center">
+        <button onclick="go('s-title')">Play again ↺</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));$(id).classList.add('on');}
+function confetti(n=24){const e=['💛','💖','✨','🍿','☕','🎬'];for(let i=0;i<n;i++){const d=document.createElement('div');d.className='float';
+  d.textContent=e[i%e.length];d.style.left=Math.random()*100+'vw';d.style.top=(60+Math.random()*40)+'vh';
+  d.style.animationDelay=Math.random()*1.5+'s';document.body.appendChild(d);setTimeout(()=>d.remove(),5000);}}
+
+/* ---------- sprites ---------- */
+function person(ctx,x,y,s,hair,shirt,long,flip){
+  ctx.save();ctx.translate(x,y);ctx.scale(flip?-s:s,s);
+  const skin='#ffd9b8';
+  if(long){ctx.fillStyle=hair;ctx.fillRect(-9,-30,18,30);}          // long hair back
+  ctx.fillStyle=shirt;ctx.fillRect(-7,-16,14,16);                    // body
+  ctx.fillStyle='#3b4a6b';ctx.fillRect(-6,0,5,8);ctx.fillRect(1,0,5,8); // legs
+  ctx.fillStyle=skin;ctx.fillRect(-8,-34,16,16);                     // head
+  ctx.fillStyle=hair;ctx.fillRect(-9,-37,18,7);                      // hair top
+  if(long){ctx.fillRect(-9,-37,4,20);ctx.fillRect(5,-37,4,20);}
+  ctx.fillStyle='#222';ctx.fillRect(-4,-26,2,3);ctx.fillRect(3,-26,2,3);
+  ctx.fillStyle='#ff8fa3';ctx.fillRect(-2,-21,5,2);
+  ctx.restore();
+}
+const MITCH=(c,x,y,s,f)=>person(c,x,y,s,'#6b4226','#4d9de0',false,f);
+const ALAYNA=(c,x,y,s,f)=>person(c,x,y,s,'#f5d76e','#ff6b8b',true,f);
+
+/* intro preview */
+(function(){const c=$('c0').getContext('2d');c.fillStyle='#ffeccf';c.fillRect(0,0,420,200);
+  c.fillStyle='#e8c9a0';c.fillRect(0,160,420,40);
+  c.font='14px sans-serif';c.fillText('☕🍕🍪',150,28);c.fillText('HUBBLE',18,24);
+  MITCH(c,200,60,2.2);ALAYNA(c,210,185,2.2);})();
+
+/* ---------- LEVEL 1 ---------- */
+let L1;
+function startL1(){go('s-l1');const cv=$('c1'),c=cv.getContext('2d');
+  L1={x:210,items:[],score:0,t:0,run:true,mx:210,mitchX:210,dir:1};
+  function setX(cx){const r=cv.getBoundingClientRect();L1.mx=(cx-r.left)/r.width*cv.width;}
+  cv.onmousemove=e=>setX(e.clientX);
+  cv.ontouchmove=cv.ontouchstart=e=>{setX(e.touches[0].clientX);};
+  const keys={};
+  window.onkeydown=e=>{keys[e.key]=1;};window.onkeyup=e=>{keys[e.key]=0;};
+  const foods=['🍕','🍪','☕','💛','🥤','🍟'];
+  (function loop(){
+    if(!L1.run)return;
+    L1.t++;
+    if(keys.ArrowLeft)L1.mx-=8;if(keys.ArrowRight)L1.mx+=8;
+    L1.mx=Math.max(30,Math.min(390,L1.mx));
+    L1.x+=(L1.mx-L1.x)*.25;
+    L1.mitchX+=L1.dir*1.6;if(L1.mitchX>380||L1.mitchX<40)L1.dir*=-1;
+    if(L1.t%38===0)L1.items.push({x:L1.mitchX,y:90,v:2.2+Math.random()*1.6,e:foods[Math.random()*foods.length|0],r:0});
+    c.fillStyle='#ffeccf';c.fillRect(0,0,420,560);
+    c.fillStyle='#e8c9a0';c.fillRect(0,500,420,60);
+    c.fillStyle='#c98f5a';c.fillRect(0,92,420,10);
+    c.fillStyle='#4a2c40';c.font='bold 16px sans-serif';c.fillText('HUBBLE',165,22);
+    MITCH(c,L1.mitchX,92,1.8,L1.dir<0);
+    c.font='28px sans-serif';
+    for(const it of L1.items){it.y+=it.v;it.r+=.05;c.save();c.translate(it.x,it.y);c.rotate(Math.sin(it.r)*.4);c.fillText(it.e,-14,10);c.restore();}
+    ALAYNA(c,L1.x,500,1.9);
+    c.font='26px sans-serif';c.fillText('🍽️',L1.x-16,458);
+    L1.items=L1.items.filter(it=>{
+      if(it.y>425&&it.y<470&&Math.abs(it.x-L1.x)<34){L1.score++;$('l1score').textContent=L1.score+' / 12';return false;}
+      return it.y<560;});
+    if(L1.score>=12){L1.run=false;confetti();setTimeout(()=>{go('s-intro2')},900);return;}
+    requestAnimationFrame(loop);
+  })();
+}
+
+/* ---------- LEVEL 2 ---------- */
+function startL2(){go('s-l2');
+  const set=['🍿','🎬','🛋️','🧸','💛','⭐','🍕','🍪'];
+  let cards=[...set,...set].sort(()=>Math.random()-.5);
+  const g=$('grid');g.innerHTML='';let open=[],moves=0,found=0,lock=false;
+  $('l2info').textContent='Moves: 0';$('l2msg').textContent='Find the matches!';
+  cards.forEach(e=>{
+    const t=document.createElement('div');t.className='tile';t.dataset.e=e;
+    t.innerHTML='<div><span class="f">?</span><span class="b">'+e+'</span></div>';
+    t.onclick=()=>{
+      if(lock||t.classList.contains('flip'))return;
+      t.classList.add('flip');open.push(t);
+      if(open.length===2){moves++;$('l2info').textContent='Moves: '+moves;lock=true;
+        const[a,b]=open;
+        if(a.dataset.e===b.dataset.e){a.classList.add('done');b.classList.add('done');found++;open=[];lock=false;
+          const lines=['Great pick!','A classic pair.','Perfect match, like some people I know.','Cozy.','Wholesome movie night, parent-approved 😇'];
+          $('l2msg').textContent=lines[Math.random()*lines.length|0];
+          if(found===8){confetti();$('l2msg').textContent='Movie night complete! 🎬';setTimeout(()=>go('s-intro3'),1400);}
+        }else setTimeout(()=>{a.classList.remove('flip');b.classList.remove('flip');open=[];lock=false;},800);
+      }
+    };
+    g.appendChild(t);
+  });
+}
+
+/* ---------- LEVEL 3 ---------- */
+let L3;
+function startL3(){go('s-l3');const cv=$('c3'),c=cv.getContext('2d');
+  L3={y:0,vy:0,ground:240,obs:[],hearts:[],t:0,prog:0,got:0,hurt:0,run:true,speed:4.5,sx:0};
+  function jump(){if(L3.y===0){L3.vy=-13.5;}}
+  cv.onpointerdown=jump;window.onkeydown=e=>{if(e.code==='Space'||e.key==='ArrowUp'){e.preventDefault();jump();}};
+  const bad=['📚','⏰','🐛'];
+  (function loop(){
+    if(!L3.run)return;
+    L3.t++;
+    // physics
+    if(L3.y<0||L3.vy<0){L3.vy+=.75;L3.y+=L3.vy;if(L3.y>=0){L3.y=0;L3.vy=0;}}
+    L3.sx=(L3.sx+L3.speed)%640;
+    if(L3.t%75===0)L3.obs.push({x:660,e:bad[Math.random()*3|0]});
+    if(L3.t%55===0)L3.hearts.push({x:660,y:140+Math.random()*80});
+    L3.prog+=.045+(L3.hurt>0?0:.0)+L3.speed*.0035; if(L3.hurt>0)L3.hurt--;
+    // draw
+    const g=c.createLinearGradient(0,0,0,300);g.addColorStop(0,'#9ad7ff');g.addColorStop(1,'#ffe6c7');
+    c.fillStyle=g;c.fillRect(0,0,640,300);
+    c.font='40px sans-serif';
+    c.fillText('☁️',(500-L3.sx*.3+640)%640,60);c.fillText('☁️',(150-L3.sx*.3+640)%640,100);
+    c.fillStyle='#8bc34a';c.fillRect(0,240,640,60);
+    c.fillStyle='#6fa836';for(let i=0;i<14;i++)c.fillRect(((i*60-L3.sx)%660+660)%660-10,252,30,5);
+    // characters
+    const px=110,py=240+L3.y;
+    MITCH(c,px,py,1.5,false);
+    if(L3.hurt>0){c.font='22px sans-serif';c.fillText('😵',px-10,py-70);}
+    // alayna waiting at the end
+    const ax=640-(L3.prog/100)*540+40;
+    if(ax<640){ALAYNA(c,Math.max(ax,540),240,1.5,true);c.font='20px sans-serif';c.fillText('📚',Math.max(ax,540)+16,200);}
+    // hearts
+    c.font='28px sans-serif';
+    for(const h of L3.hearts){h.x-=L3.speed;c.fillText('💛',h.x,h.y);
+      if(!h.d&&Math.abs(h.x-px)<22&&Math.abs(h.y-(py-25))<30){h.d=1;L3.got++;L3.prog+=2;$('l3hearts').textContent='💛 '+L3.got;}}
+    L3.hearts=L3.hearts.filter(h=>!h.d&&h.x>-30);
+    // obstacles
+    for(const o of L3.obs){o.x-=L3.speed;c.font='34px sans-serif';c.fillText(o.e,o.x,248);
+      if(!o.h&&Math.abs(o.x+14-px)<22&&L3.y>-26&&L3.hurt===0){o.h=1;L3.hurt=40;L3.prog=Math.max(0,L3.prog-4);}}
+    L3.obs=L3.obs.filter(o=>o.x>-40);
+    // labels
+    c.fillStyle='#4a2c40';c.font='bold 12px sans-serif';c.fillText('Mitch · AI solutions 🤖',px-50,py-82);
+    $('bar').style.width=Math.min(100,L3.prog)+'%';
+    if(L3.prog>=100){L3.run=false;confetti(40);reunion(c);return;}
+    requestAnimationFrame(loop);
+  })();
+}
+function reunion(c){
+  c.fillStyle='#ffd9e0';c.fillRect(0,0,640,300);
+  c.fillStyle='#8bc34a';c.fillRect(0,240,640,60);
+  MITCH(c,290,240,2.2);ALAYNA(c,350,240,2.2,true);
+  c.font='46px sans-serif';c.fillText('💛',302,90);
+  c.fillStyle='#4a2c40';c.font='bold 20px sans-serif';c.fillText('Together (at least in this level!)',170,40);
+  setTimeout(()=>go('s-end'),2800);
+}
+</script>
+</body>
+</html>
